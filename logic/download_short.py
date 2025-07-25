@@ -45,7 +45,7 @@ def run_download_process(api_key, adb_path, remote_folder, temp_folder,
 
         video_ids = [item["id"]["videoId"] for item in search_response["items"]]
         video_response = youtube.videos().list(
-            part="statistics,contentDetails",
+            part="snippet,statistics,contentDetails",
             id=",".join(video_ids)
         ).execute()
 
@@ -55,10 +55,16 @@ def run_download_process(api_key, adb_path, remote_folder, temp_folder,
             if vid in downloaded_ids:
                 continue
 
+            # Bỏ livestream
+            if item["snippet"].get("liveBroadcastContent") == "live":
+                print(f"⛔ Bỏ livestream: {vid}")
+                continue
+
             duration_str = item["contentDetails"]["duration"]
             try:
                 duration_sec = int(isodate.parse_duration(duration_str).total_seconds())
                 if duration_sec > 60:
+                    print(f"⏭️ Bỏ video dài: {vid} ({duration_sec}s)")
                     continue
             except:
                 continue
@@ -90,15 +96,26 @@ def run_download_process(api_key, adb_path, remote_folder, temp_folder,
 
         print(f"[{serial}] Tải video ID: {video_id}")
         ydl_opts = {
-            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best",
+            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
             "merge_output_format": "mp4",
             "outtmpl": local_path,
             "quiet": False,
-            "noplaylist": True
+            "noplaylist": True,
+            "match_filter": lambda info: "LIVE" if info.get("is_live") else None,
         }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            print(f"[{serial}] ⚠️ Lỗi khi tải video: {e}")
+            if os.path.exists(local_path + ".part"):
+                os.remove(local_path + ".part")
+            return
+
+        if not os.path.exists(local_path):
+            print(f"[{serial}] ⚠️ Không tìm thấy file sau khi tải: {local_path}")
+            return
 
         print(f"[{serial}] Đẩy vào máy ảo...")
         subprocess.run([adb_path, "-s", serial, "push", local_path, remote_folder], check=True)

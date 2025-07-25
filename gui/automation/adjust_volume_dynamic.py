@@ -20,7 +20,7 @@ from .get_pust_title import set_title_from_video_id
 
 from gui.automation import adjust_volume_dynamic  # ✅ Tránh circular import
 
-ADB_PATH = "C:\\Users\\ADMIN\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe"
+ADB_PATH = "C:\\Users\\dell\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe"
 
 def open_youtube(serial):
     print(f"[{serial}] 🚀 Mở YouTube...")
