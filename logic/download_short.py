@@ -1,9 +1,22 @@
 import os
+import json
 import subprocess
 from googleapiclient.discovery import build
 import yt_dlp
 import isodate
 import concurrent.futures
+
+DOWNLOADED_FILE = "downloaded_videos.json"
+
+def load_downloaded_ids():
+    if os.path.exists(DOWNLOADED_FILE):
+        with open(DOWNLOADED_FILE, "r") as f:
+            return set(json.load(f))
+    return set()
+
+def save_downloaded_ids(ids_set):
+    with open(DOWNLOADED_FILE, "w") as f:
+        json.dump(sorted(list(ids_set)), f, indent=2)
 
 def run_download_process(api_key, adb_path, remote_folder, temp_folder,
                          search_video_query, number_of_videos=None):
@@ -39,6 +52,9 @@ def run_download_process(api_key, adb_path, remote_folder, temp_folder,
         scored_videos = []
         for item in video_response["items"]:
             vid = item["id"]
+            if vid in downloaded_ids:
+                continue
+
             duration_str = item["contentDetails"]["duration"]
             try:
                 duration_sec = int(isodate.parse_duration(duration_str).total_seconds())
@@ -89,6 +105,10 @@ def run_download_process(api_key, adb_path, remote_folder, temp_folder,
         refresh_media_on_emulator(serial, remote_folder + os.path.basename(local_path))
 
         os.remove(local_path)
+
+        downloaded_ids.add(video_id)
+        save_downloaded_ids(downloaded_ids)
+
         print(f"[{serial}] Hoàn tất")
 
     def handle_emulator_task(idx, serial, vid, views, likes):
@@ -100,7 +120,6 @@ def run_download_process(api_key, adb_path, remote_folder, temp_folder,
         except Exception as e:
             print(f"[{serial}] Lỗi: {e}")
 
-    # === CHẠY QUY TRÌNH CHÍNH ===
     serials = get_emulator_serials()
     if not serials:
         print("Không tìm thấy máy ảo nào.")
@@ -113,6 +132,9 @@ def run_download_process(api_key, adb_path, remote_folder, temp_folder,
 
     for serial in serials:
         clear_remote_videos(serial)
+
+    global downloaded_ids
+    downloaded_ids = load_downloaded_ids()
 
     top_videos = get_top_shorts(query=search_video_query, number_of_videos=number_of_videos, search_pool=50)
 
