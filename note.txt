@@ -1,4 +1,4 @@
-ADB_PATH = C:\Users\dell\AppData\Local\Android\Sdk\platform-tools\adb.exe
+ADB_PATH = C:\Users\ADMIN\AppData\Local\Android\Sdk\platform-tools\adb.exe
 REMOTE_FOLDER = /sdcard/Movies/
 TEMP_FOLDER = ./temp_videos
 AIzaSyAl4V-ADdHJLIW8lr1bbDVvEom5xuBJq48

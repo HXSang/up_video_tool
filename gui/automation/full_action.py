@@ -4,6 +4,8 @@ import subprocess
 import xml.etree.ElementTree as ET
 import re
 
+from gui.automation import tap_volume_button  # có thể tạm unused
+from gui.automation.set_title_dynamic import set_title_from_video_id
 from gui.automation.tap_create_short_button import tap_create_button, tap_short_button
 from .tap_add_gallery_button import tap_add_gallery_button
 from .tap_upload_short import tap_upload_short
@@ -15,11 +17,11 @@ from .pick_first_music_and_next import pick_first_music_and_next
 from .search_music import search_music
 from .video_utils import get_video_id_for_serial
 from .tap_checkmark_button import tap_checkmark_button
+from .tap_volume_button import tap_volume_button
+from .adjust_volume_control import adjust_volume_dynamic
 from .tap_next_button_final import tap_next_button_final
-from .adjust_volume_dynamic import adjust_volume_dynamic
-from .get_pust_title import set_title_from_video_id
 
-ADB_PATH = "C:\\Users\\dell\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe"
+ADB_PATH = "C:\\Users\\ADMIN\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe"
 
 def open_youtube(serial):
     print(f"[{serial}] 🚀 Mở YouTube...")
@@ -80,41 +82,7 @@ def wait_until_add_sound_visible(serial, max_wait=120):
     print(f"[{serial}] ❌ Hết thời gian chờ nút 'Add sound'")
     return False
 
-def wait_until_volume_ui_visible(serial, max_wait=60):
-    print(f"[{serial}] ⏳ Chờ giao diện chỉnh âm lượng (tối đa {max_wait}s)...")
-    xml_file = f"window_dump_{serial}.xml"
-    start = time.time()
-
-    while time.time() - start < max_wait:
-        subprocess.run(["adb", "-s", serial, "shell", "uiautomator", "dump"], stdout=subprocess.DEVNULL)
-        subprocess.run(["adb", "-s", serial, "pull", "/sdcard/window_dump.xml", xml_file], stdout=subprocess.DEVNULL)
-
-        try:
-            tree = ET.parse(xml_file)
-            root = tree.getroot()
-            if root is None:
-                raise ValueError("Root node is null.")
-        except Exception as e:
-            print(f"[{serial}] ⚠️ XML dump lỗi hoặc rỗng: {e}")
-            time.sleep(2)
-            continue
-
-        for node in root.iter():
-            if (
-                node.attrib.get("resource-id") == "com.google.android.youtube:id/shorts_edit_volume_button"
-                and node.attrib.get("class") == "android.widget.Button"
-                and node.attrib.get("content-desc", "").lower() == "volume"
-                and node.attrib.get("enabled") == "true"
-            ):
-                print(f"[{serial}] ✅ Giao diện chỉnh âm lượng đã sẵn sàng.")
-                return True
-
-        time.sleep(2)
-
-    print(f"[{serial}] ❌ Hết thời gian chờ giao diện âm lượng.")
-    return False
-
-def run(serial, song_name=None, api_key=None, voice_percent=100, music_percent=50):
+def run(serial, api_key, song_name=None, voice_percent=99, music_percent=50):
     print(f"\n========== BẮT ĐẦU LUỒNG [{serial}] ==========")
 
     open_youtube(serial)
@@ -145,7 +113,7 @@ def run(serial, song_name=None, api_key=None, voice_percent=100, music_percent=5
 
         if song_name:
             search_music(song_name, serial)
-            time.sleep(2)
+            time.sleep(4)
             pick_first_music_and_next(serial)
         else:
             print(f"[{serial}] ⚠️ Không có tên bài nhạc được cung cấp.")
@@ -155,21 +123,21 @@ def run(serial, song_name=None, api_key=None, voice_percent=100, music_percent=5
             return
 
         tap_checkmark_button(serial)
+        print(f"[{serial}] ✅ Đã tap nút Checkmark thành công.")
+        
+        tap_volume_button(serial)
+        time.sleep(3)
+        
+        adjust_volume_dynamic(serial, voice_percent, music_percent)
+        time.sleep(3)
+        
+        tap_next_button_final(serial)
+        time.sleep(3)
+        
+        set_title_from_video_id(video_id, api_key, serial)
+        time.sleep(5)
+        
+        tap_upload_short(serial)
+        time.sleep(5)
 
-        # 🔊 Bổ sung quét giao diện chỉnh âm lượng bằng XML
-        if wait_until_volume_ui_visible(serial, max_wait=60):
-            adjust_volume_dynamic(serial, voice_percent, music_percent)
-        else:
-            print(f"[{serial}] ⚠️ Bỏ qua chỉnh volume vì không thấy giao diện.")
-
-        if not wait_until_ui_has(serial, "shorts_upload_button", timeout=20):
-            print(f"[{serial}] ❌ Không tìm thấy nút Next cuối.")
-        else:
-            tap_next_button_final(serial)
-
-        if video_id and api_key:
-            set_title_from_video_id(video_id, api_key, serial)
-        else:
-            print(f"[{serial}] ⚠️ Thiếu video_id hoặc api_key, không thể đặt tiêu đề.")
-
-    print(f"========== ✅ KẾT THÚC LUỒNG [{serial}] ==========\n")
+    print(f"========== ✅ KẾT THÚC TEST [{serial}] ==========\n")

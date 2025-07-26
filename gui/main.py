@@ -111,8 +111,8 @@ class MainApp(QtWidgets.QMainWindow):
                 print(f"▶️ Chạy upload + nhạc trên {serial}")
                 run(
                     serial,
-                    song_name=song_name,
                     api_key=api_key,
+                    song_name=song_name,
                     voice_percent=voice_percent,
                     music_percent=music_percent
                 )

@@ -43,9 +43,10 @@ def search_music(song_name, serial="emulator-5554"):
     query = song_name.strip().replace(" ", "+")
     print(f"Đang nhập: {song_name}")
     subprocess.run(["adb", "-s", serial, "shell", "input", "text", query])
-
+    time.sleep(1)
     # Gửi phím Enter để tìm
     subprocess.run(["adb", "-s", serial, "shell", "input", "keyevent", "66"])  # KEYCODE_ENTER
+    time.sleep(1)
 
 if __name__ == "__main__":
     search_music("Alan Walker faded")

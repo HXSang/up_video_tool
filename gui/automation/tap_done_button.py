@@ -4,7 +4,7 @@ import re
 import time
 import subprocess
 
-ADB_PATH = 'C:\\Users\\dell\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe'
+ADB_PATH = 'C:\\Users\\ADMIN\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe'
 
 def run_adb(cmd, serial):
     subprocess.run([ADB_PATH, "-s", serial, "shell"] + cmd.split(), shell=False)
