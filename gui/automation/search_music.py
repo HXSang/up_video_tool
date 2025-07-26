@@ -21,32 +21,27 @@ def find_bounds_for_search_box(xml_file_path):
     return None
 
 def search_music(song_name, serial="emulator-5554"):
-    print(f"📥 Dumping UI from device {serial}...")
+    print(f"Dumping UI from device {serial}...")
     subprocess.run(["adb", "-s", serial, "shell", "uiautomator", "dump"])
     subprocess.run(["adb", "-s", serial, "pull", "/sdcard/window_dump.xml"])
 
-    print("🔍 Tìm ô tìm kiếm nhạc...")
+    print("Tìm ô tìm kiếm nhạc...")
     bounds = find_bounds_for_search_box("window_dump.xml")
     if not bounds:
-        print("❌ Không tìm thấy ô search nhạc.")
+        print("Không tìm thấy ô search nhạc.")
         return
 
     x, y = get_center_of_bounds(bounds)
-    print(f"✅ Tap vào ô search tại ({x}, {y})")
+    print(f"Tap vào ô search tại ({x}, {y})")
     subprocess.run(["adb", "-s", serial, "shell", "input", "tap", str(x), str(y)])
 
-    # Chờ keyboard hiện ra
     import time
     time.sleep(1)
 
-    # Gõ tên bài hát (thay khoảng trắng bằng +)
     query = song_name.strip().replace(" ", "+")
     print(f"Đang nhập: {song_name}")
     subprocess.run(["adb", "-s", serial, "shell", "input", "text", query])
     time.sleep(1)
-    # Gửi phím Enter để tìm
-    subprocess.run(["adb", "-s", serial, "shell", "input", "keyevent", "66"])  # KEYCODE_ENTER
-    time.sleep(1)
 
-if __name__ == "__main__":
-    search_music("Alan Walker faded")
+    subprocess.run(["adb", "-s", serial, "shell", "input", "keyevent", "66"])
+    time.sleep(1)

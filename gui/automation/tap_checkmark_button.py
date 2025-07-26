@@ -17,7 +17,7 @@ def get_center_of_bounds(bounds_str):
     return (x1 + x2) // 2, (y1 + y2) // 2
 
 def tap_checkmark_button(serial="emulator-5554"):
-    print("📥 Dumping UI để tìm nút V (Checkmark)...")
+    print("Dumping UI để tìm nút V (Checkmark)...")
     dump_ui(serial)
 
     tree = ET.parse("window_dump.xml")
@@ -31,11 +31,9 @@ def tap_checkmark_button(serial="emulator-5554"):
         ):
             bounds = node.attrib.get("bounds", "")
             x, y = get_center_of_bounds(bounds)
-            print(f"✅ Tap nút V tại ({x}, {y})")
+            print(f"Tap nút V tại ({x}, {y})")
             adb_tap(x, y, serial)
             return
 
-    print("❌ Không tìm thấy nút V (Checkmark).")
+    print("Không tìm thấy nút V (Checkmark).")
 
-if __name__ == "__main__":
-    tap_checkmark_button()

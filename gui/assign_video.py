@@ -2,8 +2,10 @@ import os
 import json
 import subprocess
 
-DOWNLOADED_FILE = "downloaded_videos.json"
-ASSIGNED_FILE = "video_assigned.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+ASSIGNED_FILE = os.path.join(BASE_DIR, "video_assigned.json")
+DOWNLOADED_FILE = os.path.join(BASE_DIR, "downloaded_videos.json")
 
 def get_emulator_serials(adb_path):
     result = subprocess.getoutput(f'"{adb_path}" devices')
@@ -34,15 +36,17 @@ def save_downloaded_ids(data):
 def assign_videos_to_emulators(adb_path):
     serials = get_emulator_serials(adb_path)
     downloaded_ids = load_downloaded_ids()
-    assigned = {}
+    assigned = load_assigned()
 
     changed = False
-    available_ids = downloaded_ids.copy()
+    available_ids = [vid for vid in downloaded_ids if vid not in assigned.values()]
 
     for serial in serials:
-        if available_ids:
+        if serial not in assigned and available_ids:
             assigned[serial] = available_ids.pop(0)
             changed = True
+        elif serial in assigned:
+            print(f"[{serial}] ✅ Đã được gán video: {assigned[serial]}")
         else:
             print(f"[{serial}] ⚠️ Không còn video nào để gán")
 

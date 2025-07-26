@@ -2,11 +2,14 @@ import os
 import json
 
 def get_video_id_for_serial(serial):
-    json_path = os.path.join(os.path.dirname(__file__), "..", "video_assigned.json")
-    json_path = os.path.abspath(json_path)
+    # Lấy đường dẫn tuyệt đối tới thư mục gui/
+    gui_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+    # Trỏ tới file video_assigned.json nằm trong gui/
+    json_path = os.path.join(gui_dir, "video_assigned.json")
 
     try:
-        with open(json_path, "r") as f:
+        with open(json_path, "r", encoding="utf-8") as f:
             assignments = json.load(f)
         return assignments.get(serial)
     except Exception as e:

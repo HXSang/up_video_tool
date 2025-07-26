@@ -61,5 +61,3 @@ def run_all_from_assignment():
         else:
             print(f"[{serial}]Không tìm thấy video ID trong video_assigned.json")
 
-if __name__ == "__main__":
-    run_all_from_assignment()

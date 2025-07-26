@@ -13,7 +13,6 @@ def get_video_title(video_id, api_key):
     return None
 
 def sanitize_for_adb(text):
-    # Bỏ emoji/ký tự không gõ được
     return re.sub(r"[^\w\s#@-]", "", text).replace(" ", "%s")
 
 def dump_ui(serial="emulator-5554"):
@@ -35,14 +34,14 @@ def type_title_to_box(title, serial="emulator-5554"):
     subprocess.run(["adb", "-s", serial, "shell", "input", "text", clean_title])
 
 def set_title_from_video_id(video_id, api_key, serial="emulator-5554"):
-    print("📥 Lấy tiêu đề...")
+    print("Lấy tiêu đề...")
     title = get_video_title(video_id, api_key)
     if not title:
-        print("❌ Không lấy được tiêu đề.")
+        print("Không lấy được tiêu đề.")
         return
-    print(f"🎬 Tiêu đề: {title}")
+    print(f"Tiêu đề: {title}")
 
-    print("🔍 Tìm ô nhập tiêu đề...")
+    print("Tìm ô nhập tiêu đề...")
     dump_ui(serial)
     xml_path = f"window_dump_{serial}.xml"
     tree = ET.parse(xml_path)
@@ -60,7 +59,7 @@ def set_title_from_video_id(video_id, api_key, serial="emulator-5554"):
                 adb_tap(x, y, serial)
                 time.sleep(1)
                 type_title_to_box(title, serial)
-                print("✅ Đã nhập tiêu đề vào ô Caption.")
+                print("Đã nhập tiêu đề vào ô Caption.")
                 return
-    print("❌ Không tìm thấy ô nhập tiêu đề.")
+    print("Không tìm thấy ô nhập tiêu đề.")
 

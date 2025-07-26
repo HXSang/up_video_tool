@@ -5,6 +5,7 @@ from googleapiclient.discovery import build
 import yt_dlp
 import isodate
 import concurrent.futures
+from gui.assign_video import assign_videos_to_emulators
 
 DOWNLOADED_FILE = "downloaded_videos.json"
 
@@ -20,7 +21,7 @@ def save_downloaded_ids(ids_set):
 
 def run_download_process(api_key, adb_path, remote_folder, temp_folder,
                          search_video_query, number_of_videos=None):
-
+    
     def get_emulator_serials():
         result = subprocess.getoutput(f'"{adb_path}" devices')
         lines = result.strip().splitlines()[1:]
@@ -164,3 +165,5 @@ def run_download_process(api_key, adb_path, remote_folder, temp_folder,
         concurrent.futures.wait(futures)
 
     print("\nĐã đẩy xong video lên tất cả máy ảo.")
+
+    assign_videos_to_emulators(adb_path)

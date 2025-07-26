@@ -5,13 +5,13 @@ import time
 
 def dump_ui(serial="emulator-5554"):
     """Dump UI của thiết bị và lưu về file window_dump.xml"""
-    print(f"[{serial}] 📥 Dump UI...")
+    print(f"[{serial}]Dump UI...")
     subprocess.run(["adb", "-s", serial, "shell", "uiautomator", "dump"], stdout=subprocess.DEVNULL)
     subprocess.run(["adb", "-s", serial, "pull", "/sdcard/window_dump.xml"], stdout=subprocess.DEVNULL)
 
 def adb_tap(x, y, serial):
     """Nhấn tại vị trí x, y trên thiết bị"""
-    print(f"[{serial}] 👉 Tapping tại ({x}, {y})")
+    print(f"[{serial}]Tapping tại ({x}, {y})")
     subprocess.run(["adb", "-s", serial, "shell", "input", "tap", str(x), str(y)])
 
 def get_bounds(bounds):
@@ -39,18 +39,10 @@ def tap_add_gallery_button(serial="emulator-5554"):
                     x1, y1, x2, y2 = parsed
                     x = (x1 + x2) // 2
                     y = (y1 + y2) // 2
-                    print(f"[{serial}] ✅ Tìm thấy nút Add Gallery tại ({x}, {y})")
+                    print(f"[{serial}]Tìm thấy nút Add Gallery tại ({x}, {y})")
                     adb_tap(x, y, serial)
                     return True
-        print(f"[{serial}] ❌ Không tìm thấy nút Add Gallery.")
+        print(f"[{serial}]Không tìm thấy nút Add Gallery.")
     except Exception as e:
-        print(f"[{serial}] ⚠️ Lỗi khi xử lý XML: {e}")
+        print(f"[{serial}]Lỗi khi xử lý XML: {e}")
     return False
-
-if __name__ == "__main__":
-    serial = "emulator-5554"
-    success = tap_add_gallery_button(serial)
-    if success:
-        print(f"[{serial}] 🎉 Đã nhấn nút Add Gallery thành công.")
-    else:
-        print(f"[{serial}] 💥 Thất bại khi nhấn nút Add Gallery.")

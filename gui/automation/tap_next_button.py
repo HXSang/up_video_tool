@@ -22,19 +22,16 @@ def find_bounds_for_next_button(xml_file_path):
     return None
 
 def tap_next_button(serial="emulator-5554"):
-    print(f"📥 Dumping UI from device {serial}...")
+    print(f"Dumping UI from device {serial}...")
     subprocess.run(["adb", "-s", serial, "shell", "uiautomator", "dump"])
     subprocess.run(["adb", "-s", serial, "pull", "/sdcard/window_dump.xml"])
 
-    print("🔍 Tìm nút Next trong giao diện...")
+    print("Tìm nút Next trong giao diện...")
     bounds = find_bounds_for_next_button("window_dump.xml")
     if not bounds:
-        print("❌ Không tìm thấy nút Next hoặc nó đang bị vô hiệu hóa (enabled=false).")
+        print("Không tìm thấy nút Next hoặc nó đang bị vô hiệu hóa (enabled=false).")
         return
 
     x, y = get_center_of_bounds(bounds)
-    print(f"✅ Tap nút Next tại tọa độ ({x}, {y})")
+    print(f"Tap nút Next tại tọa độ ({x}, {y})")
     subprocess.run(["adb", "-s", serial, "shell", "input", "tap", str(x), str(y)])
-
-if __name__ == "__main__":
-    tap_next_button()  # GỌI HÀM TẠI ĐÂY

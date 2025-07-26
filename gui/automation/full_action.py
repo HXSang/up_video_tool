@@ -2,9 +2,10 @@ import os
 import time
 import subprocess
 import xml.etree.ElementTree as ET
+import json
 import re
 
-from gui.automation import tap_volume_button  # có thể tạm unused
+from gui.automation import tap_volume_button
 from gui.automation.set_title_dynamic import set_title_from_video_id
 from gui.automation.tap_create_short_button import tap_create_button, tap_short_button
 from .tap_add_gallery_button import tap_add_gallery_button
@@ -21,22 +22,33 @@ from .tap_volume_button import tap_volume_button
 from .adjust_volume_control import adjust_volume_dynamic
 from .tap_next_button_final import tap_next_button_final
 
-ADB_PATH = "C:\\Users\\ADMIN\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe"
+# ✅ File lưu lại video đã đăng
+UPLOADED_FILE = os.path.join(os.getcwd(), "uploaded_videos.json")
 
-def open_youtube(serial):
-    print(f"[{serial}] 🚀 Mở YouTube...")
-    os.system(f'"{ADB_PATH}" -s {serial} shell monkey -p com.google.android.youtube -c android.intent.category.LAUNCHER 1')
+def load_uploaded_ids():
+    if os.path.exists(UPLOADED_FILE):
+        with open(UPLOADED_FILE, "r") as f:
+            return set(json.load(f))
+    return set()
+
+def save_uploaded_ids(ids_set):
+    with open(UPLOADED_FILE, "w") as f:
+        json.dump(sorted(list(ids_set)), f, indent=2)
+
+def open_youtube(serial, adb_path):
+    print(f"[{serial}]Mở YouTube...")
+    os.system(f'"{adb_path}" -s {serial} shell monkey -p com.google.android.youtube -c android.intent.category.LAUNCHER 1')
     time.sleep(3)
 
-def dump_ui(serial):
-    subprocess.run([ADB_PATH, "-s", serial, "shell", "uiautomator", "dump"], stdout=subprocess.DEVNULL)
-    subprocess.run([ADB_PATH, "-s", serial, "pull", "/sdcard/window_dump.xml", f"window_dump_{serial}.xml"], stdout=subprocess.DEVNULL)
+def dump_ui(serial, adb_path):
+    subprocess.run([adb_path, "-s", serial, "shell", "uiautomator", "dump"], stdout=subprocess.DEVNULL)
+    subprocess.run([adb_path, "-s", serial, "pull", "/sdcard/window_dump.xml", f"window_dump_{serial}.xml"], stdout=subprocess.DEVNULL)
 
-def wait_until_ui_has(serial, keyword, timeout=10):
-    print(f"[{serial}] ⏳ Chờ UI chứa '{keyword}'...")
+def wait_until_ui_has(serial, keyword, timeout=10, adb_path="adb"):
+    print(f"[{serial}]Chờ UI chứa '{keyword}'...")
     start = time.time()
     while time.time() - start < timeout:
-        dump_ui(serial)
+        dump_ui(serial, adb_path)
         try:
             tree = ET.parse(f"window_dump_{serial}.xml")
             root = tree.getroot()
@@ -46,22 +58,22 @@ def wait_until_ui_has(serial, keyword, timeout=10):
                     keyword in node.attrib.get("text", "") or
                     keyword in node.attrib.get("resource-id", "")
                 ):
-                    print(f"[{serial}] ✅ Tìm thấy UI: '{keyword}'")
+                    print(f"[{serial}]Tìm thấy UI: '{keyword}'")
                     return True
         except Exception as e:
-            print(f"[{serial}] ⚠️ Lỗi khi đọc XML: {e}")
+            print(f"[{serial}]Lỗi khi đọc XML: {e}")
         time.sleep(1)
-    print(f"[{serial}] ❌ Hết thời gian chờ UI có '{keyword}'")
+    print(f"[{serial}]Hết thời gian chờ UI có '{keyword}'")
     return False
 
-def wait_until_add_sound_visible(serial, max_wait=120):
-    print(f"[{serial}] ⏳ Chờ đến khi thấy nút 'Add sound' (tối đa {max_wait}s)...")
+def wait_until_add_sound_visible(serial, max_wait=120, adb_path="adb"):
+    print(f"[{serial}]Chờ đến khi thấy nút 'Add sound' (tối đa {max_wait}s)...")
     start = time.time()
     xml_file = f"window_dump_{serial}.xml"
 
     while time.time() - start < max_wait:
-        subprocess.run(["adb", "-s", serial, "shell", "uiautomator", "dump"], stdout=subprocess.DEVNULL)
-        subprocess.run(["adb", "-s", serial, "pull", "/sdcard/window_dump.xml", xml_file], stdout=subprocess.DEVNULL)
+        subprocess.run([adb_path, "-s", serial, "shell", "uiautomator", "dump"], stdout=subprocess.DEVNULL)
+        subprocess.run([adb_path, "-s", serial, "pull", "/sdcard/window_dump.xml", xml_file], stdout=subprocess.DEVNULL)
 
         try:
             tree = ET.parse(xml_file)
@@ -72,41 +84,45 @@ def wait_until_add_sound_visible(serial, max_wait=120):
                     node.attrib.get("text") == "Add sound" and
                     node.attrib.get("enabled") == "true"
                 ):
-                    print(f"[{serial}] ✅ Đã thấy nút 'Add sound'")
+                    print(f"[{serial}]Đã thấy nút 'Add sound'")
                     return True
         except Exception as e:
-            print(f"[{serial}] ⚠️ Lỗi khi đọc XML: {e}")
+            print(f"[{serial}]Lỗi khi đọc XML: {e}")
 
         time.sleep(2)
 
-    print(f"[{serial}] ❌ Hết thời gian chờ nút 'Add sound'")
+    print(f"[{serial}]Hết thời gian chờ nút 'Add sound'")
     return False
 
-def run(serial, api_key, song_name=None, voice_percent=99, music_percent=50):
+def run(serial, api_key, song_name=None, voice_percent=99, music_percent=50, adb_path=None):
+    if not adb_path or not os.path.exists(adb_path):
+        print(f"[{serial}]ADB path không hợp lệ hoặc không được truyền từ GUI.")
+        return
+
     print(f"\n========== BẮT ĐẦU LUỒNG [{serial}] ==========")
 
-    open_youtube(serial)
+    open_youtube(serial, adb_path)
 
-    if wait_until_ui_has(serial, "Create", timeout=10):
+    if wait_until_ui_has(serial, "Create", timeout=10, adb_path=adb_path):
         tap_create_button(serial)
 
-    if wait_until_ui_has(serial, "Short", timeout=10):
+    if wait_until_ui_has(serial, "Short", timeout=10, adb_path=adb_path):
         tap_short_button(serial)
 
-    if wait_until_ui_has(serial, "reel_camera_gallery_button_delegate", timeout=10):
+    if wait_until_ui_has(serial, "reel_camera_gallery_button_delegate", timeout=10, adb_path=adb_path):
         tap_add_gallery_button(serial)
 
         video_id = get_video_id_for_serial(serial)
         if video_id:
             tap_video_by_id(video_id, serial)
         else:
-            print(f"[{serial}] ⚠️ Không tìm thấy video ID trong video_assigned.json")
+            print(f"[{serial}]Không tìm thấy video ID trong video_assigned.json")
 
         tap_next_button(serial)
         tap_done_button(serial)
 
-        if not wait_until_add_sound_visible(serial, max_wait=120):
-            print(f"[{serial}] ❌ Không thấy nút Add sound sau khi upload xong.")
+        if not wait_until_add_sound_visible(serial, max_wait=120, adb_path=adb_path):
+            print(f"[{serial}]Không thấy nút Add sound sau khi upload xong.")
             return
 
         tap_add_sound_button(serial)
@@ -116,19 +132,19 @@ def run(serial, api_key, song_name=None, voice_percent=99, music_percent=50):
             time.sleep(4)
             pick_first_music_and_next(serial)
         else:
-            print(f"[{serial}] ⚠️ Không có tên bài nhạc được cung cấp.")
+            print(f"[{serial}]Không có tên bài nhạc được cung cấp.")
 
-        if not wait_until_ui_has(serial, "shorts_camera_next_button_delegate", timeout=20):
-            print(f"[{serial}] ❌ Không tìm thấy nút V (Checkmark) sau khi thêm nhạc.")
+        if not wait_until_ui_has(serial, "shorts_camera_next_button_delegate", timeout=20, adb_path=adb_path):
+            print(f"[{serial}]Không tìm thấy nút V (Checkmark) sau khi thêm nhạc.")
             return
 
         tap_checkmark_button(serial)
-        print(f"[{serial}] ✅ Đã tap nút Checkmark thành công.")
+        print(f"[{serial}]Đã tap nút Checkmark thành công.")
         
         tap_volume_button(serial)
         time.sleep(3)
         
-        adjust_volume_dynamic(serial, voice_percent, music_percent)
+        adjust_volume_dynamic(serial, voice_percent, music_percent, adb_path=adb_path)
         time.sleep(3)
         
         tap_next_button_final(serial)
@@ -140,4 +156,10 @@ def run(serial, api_key, song_name=None, voice_percent=99, music_percent=50):
         tap_upload_short(serial)
         time.sleep(5)
 
-    print(f"========== ✅ KẾT THÚC TEST [{serial}] ==========\n")
+        # ✅ Ghi lại video đã đăng
+        uploaded_ids = load_uploaded_ids()
+        uploaded_ids.add(video_id)
+        save_uploaded_ids(uploaded_ids)
+        print(f"[{serial}] ✅ Đã lưu videoId vào uploaded_videos.json: {video_id}")
+
+    print(f"========== KẾT THÚC TEST [{serial}] ==========\n")

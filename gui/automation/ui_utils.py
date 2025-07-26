@@ -18,7 +18,7 @@ def wait_and_tap_by_text(adb_path, serial, target_text, timeout=30, interval=1):
     """
     Chờ nút có text cụ thể rồi tự động tap vào giữa nút
     """
-    print(f"[{serial}] ⏳ Chờ nút có text '{target_text}' xuất hiện...")
+    print(f"[{serial}]Chờ nút có text '{target_text}' xuất hiện...")
     start_time = time.time()
     while time.time() - start_time < timeout:
         dump_ui(adb_path, serial)
@@ -34,13 +34,13 @@ def wait_and_tap_by_text(adb_path, serial, target_text, timeout=30, interval=1):
                     if bounds:
                         x, y = get_center_of_bounds(bounds)
                         if x and y:
-                            print(f"[{serial}] ✅ Tìm thấy và tap vào '{target_text}' tại ({x}, {y})")
+                            print(f"[{serial}]Tìm thấy và tap vào '{target_text}' tại ({x}, {y})")
                             subprocess.run([adb_path, "-s", serial, "shell", "input", "tap", str(x), str(y)])
                             return True
         except Exception as e:
-            print(f"[{serial}] ⚠️ Lỗi khi đọc XML: {e}")
+            print(f"[{serial}]Lỗi khi đọc XML: {e}")
 
         time.sleep(interval)
 
-    print(f"[{serial}] ❌ Hết thời gian chờ '{target_text}'")
+    print(f"[{serial}]Hết thời gian chờ '{target_text}'")
     return False

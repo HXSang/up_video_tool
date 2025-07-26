@@ -41,19 +41,19 @@ def find_next_button_near_y(serial, y_ref, delta=100):
                     adb_tap(x, y, serial)
                     return True
     except Exception as e:
-        print(f"[{serial}] ⚠️ Lỗi khi tìm next button: {e}")
-    print(f"[{serial}] ❌ Không tìm thấy nút → gần bài nhạc.")
+        print(f"[{serial}]Lỗi khi tìm next button: {e}")
+    print(f"[{serial}]Không tìm thấy nút → gần bài nhạc.")
     return False
 
 def pick_first_music_and_next(serial="emulator-5554"):
-    print(f"[{serial}] 📥 Dumping UI để tìm bài nhạc...")
+    print(f"[{serial}]Dumping UI để tìm bài nhạc...")
     dump_ui(serial)
 
     try:
         tree = ET.parse("window_dump.xml")
         root = tree.getroot()
     except Exception as e:
-        print(f"[{serial}] ❌ Lỗi khi đọc XML: {e}")
+        print(f"[{serial}]Lỗi khi đọc XML: {e}")
         return
 
     candidates = []
@@ -71,7 +71,7 @@ def pick_first_music_and_next(serial="emulator-5554"):
                 candidates.append((y1, x1, x2, y2, bounds))
 
     if not candidates:
-        print(f"[{serial}] ❌ Không tìm thấy bài nhạc nào.")
+        print(f"[{serial}]Không tìm thấy bài nhạc nào.")
         return
 
     candidates.sort(key=lambda item: item[0])  # bài trên cùng
@@ -79,23 +79,20 @@ def pick_first_music_and_next(serial="emulator-5554"):
 
     x_center = (x1 + x2) // 2
     y_center = (y1 + y2) // 2
-    print(f"[{serial}] 🎵 Tap bài đầu tiên tại ({x_center}, {y_center}) bounds={bounds}")
+    print(f"[{serial}]Tap bài đầu tiên tại ({x_center}, {y_center}) bounds={bounds}")
     adb_tap(x_center, y_center, serial)
 
     # Chờ preview hiện ra
     time.sleep(3)
-    print(f"[{serial}] 📥 Dump lại UI sau preview...")
+    print(f"[{serial}]Dump lại UI sau preview...")
     dump_ui(serial)
 
     success = find_next_button_near_y(serial, y1)
     if not success:
-        print(f"[{serial}] ⚠️ Fallback tap bằng toạ độ tương đối...")
+        print(f"[{serial}]Fallback tap bằng toạ độ tương đối...")
         width = x2 - x1
         height = y2 - y1
         x_relative = x1 + int(width * 0.85)
         y_relative = y1 + int(height * 0.40)
-        print(f"[{serial}] ⏭ Tap fallback tại ({x_relative}, {y_relative})")
+        print(f"[{serial}]Tap fallback tại ({x_relative}, {y_relative})")
         adb_tap(x_relative, y_relative, serial)
-
-if __name__ == "__main__":
-    pick_first_music_and_next()

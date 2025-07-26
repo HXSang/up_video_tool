@@ -59,7 +59,6 @@ class MainApp(QtWidgets.QMainWindow):
         song_name = self.line_search_music.text().strip()
         number_str = self.line_number_video.text().strip()
 
-        # ✅ Lấy âm lượng từ đúng QLineEdit
         voice_str = self.line_volume_video.text().strip()
         music_str = self.line_volume_music.text().strip()
         try:
@@ -98,7 +97,6 @@ class MainApp(QtWidgets.QMainWindow):
 
             assign_videos_to_emulators(adb_path)
 
-            # ✅ Gọi run cho tất cả máy ảo
             result = subprocess.run([adb_path, "devices"], capture_output=True, text=True)
             lines = result.stdout.strip().split("\n")[1:]
             serials = [line.split("\t")[0] for line in lines if "emulator" in line and "device" in line]
@@ -114,7 +112,8 @@ class MainApp(QtWidgets.QMainWindow):
                     api_key=api_key,
                     song_name=song_name,
                     voice_percent=voice_percent,
-                    music_percent=music_percent
+                    music_percent=music_percent,
+                    adb_path=adb_path
                 )
 
             QMessageBox.information(self, "Thành công", "Đã hoàn tất toàn bộ luồng.")
