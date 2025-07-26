@@ -16,9 +16,9 @@ def get_center_of_bounds(bounds_str):
 
 def wait_and_tap_by_text(adb_path, serial, target_text, timeout=30, interval=1):
     """
-    Chờ nút có text cụ thể rồi tự động tap vào giữa nút
+    Chờ đến khi có nút chứa text `target_text` xuất hiện trên UI thì tap vào trung tâm của nó.
     """
-    print(f"[{serial}]Chờ nút có text '{target_text}' xuất hiện...")
+    print(f"[{serial}] ⏳ Chờ nút có text '{target_text}' xuất hiện trong {timeout}s...")
     start_time = time.time()
     while time.time() - start_time < timeout:
         dump_ui(adb_path, serial)
@@ -32,15 +32,17 @@ def wait_and_tap_by_text(adb_path, serial, target_text, timeout=30, interval=1):
                 if node.attrib.get("text") == target_text:
                     bounds = node.attrib.get("bounds")
                     if bounds:
-                        x, y = get_center_of_bounds(bounds)
-                        if x and y:
-                            print(f"[{serial}]Tìm thấy và tap vào '{target_text}' tại ({x}, {y})")
+                        coords = get_center_of_bounds(bounds)
+                        if coords:
+                            x, y = coords
+                            print(f"[{serial}] ✅ Tap '{target_text}' tại ({x}, {y})")
                             subprocess.run([adb_path, "-s", serial, "shell", "input", "tap", str(x), str(y)])
                             return True
         except Exception as e:
-            print(f"[{serial}]Lỗi khi đọc XML: {e}")
+            print(f"[{serial}] ❌ Lỗi khi đọc XML: {e}")
 
         time.sleep(interval)
 
-    print(f"[{serial}]Hết thời gian chờ '{target_text}'")
+    print(f"[{serial}] ❌ Hết thời gian chờ tìm '{target_text}'")
     return False
+

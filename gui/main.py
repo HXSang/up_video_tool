@@ -5,11 +5,16 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QFileDialog, QHeaderView, QMessageBox
 
+# ✅ Đưa thư mục cha vào sys.path TRƯỚC KHI import các module tự viết
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from gui.automation.full_action import run
 from logic.download_short import run_download_process
-from assign_video import assign_videos_to_emulators
+from assign_video import assign_videos_to_emulators, get_emulator_serials
+from gui.automation.adjust_volume_control import ActionSync
+from gui.automation.full_action import run_with_sync
+from concurrent.futures import ThreadPoolExecutor
+
+
 
 class MainApp(QtWidgets.QMainWindow):
     def __init__(self):
@@ -86,6 +91,7 @@ class MainApp(QtWidgets.QMainWindow):
             return
 
         try:
+            # 1. Tải video
             run_download_process(
                 api_key=api_key,
                 adb_path=adb_path,
@@ -95,31 +101,40 @@ class MainApp(QtWidgets.QMainWindow):
                 number_of_videos=number_of_videos
             )
 
+            # 2. Gán video cho từng máy
             assign_videos_to_emulators(adb_path)
 
-            result = subprocess.run([adb_path, "devices"], capture_output=True, text=True)
-            lines = result.stdout.strip().split("\n")[1:]
-            serials = [line.split("\t")[0] for line in lines if "emulator" in line and "device" in line]
-
+            # 3. Lấy danh sách serials
+            serials = get_emulator_serials(adb_path)
             if not serials:
                 QMessageBox.warning(self, "Không có thiết bị", "Không tìm thấy máy ảo nào đang chạy.")
                 return
 
-            for serial in serials:
+            # 4. Tạo đối tượng đồng bộ
+            sync = ActionSync(len(serials))
+
+            # 5. Hàm chạy từng máy
+            def task(serial):
                 print(f"▶️ Chạy upload + nhạc trên {serial}")
-                run(
-                    serial,
+                run_with_sync(
+                    serial=serial,
                     api_key=api_key,
+                    sync=sync,
                     song_name=song_name,
                     voice_percent=voice_percent,
                     music_percent=music_percent,
                     adb_path=adb_path
                 )
 
+            # 6. Chạy tất cả máy ảo đồng thời và đồng bộ
+            with ThreadPoolExecutor(max_workers=len(serials)) as executor:
+                executor.map(task, serials)
+
             QMessageBox.information(self, "Thành công", "Đã hoàn tất toàn bộ luồng.")
 
         except Exception as e:
             QMessageBox.critical(self, "Lỗi", f"Lỗi khi xử lý: {str(e)}")
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

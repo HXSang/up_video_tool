@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import subprocess
 import re
+import time
 
 def get_center_of_bounds(bounds_str):
     match = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", bounds_str)
@@ -20,28 +21,29 @@ def find_bounds_for_search_box(xml_file_path):
             return node.attrib.get("bounds")
     return None
 
-def search_music(song_name, serial="emulator-5554"):
-    print(f"Dumping UI from device {serial}...")
-    subprocess.run(["adb", "-s", serial, "shell", "uiautomator", "dump"])
-    subprocess.run(["adb", "-s", serial, "pull", "/sdcard/window_dump.xml"])
+def search_music(song_name, serial="emulator-5554", adb_path="adb"):
+    xml_file = f"window_dump_{serial}.xml"
 
-    print("Tìm ô tìm kiếm nhạc...")
-    bounds = find_bounds_for_search_box("window_dump.xml")
+    print(f"[{serial}] Dumping UI...")
+    subprocess.run([adb_path, "-s", serial, "shell", "uiautomator", "dump"], stdout=subprocess.DEVNULL)
+    subprocess.run([adb_path, "-s", serial, "pull", "/sdcard/window_dump.xml", xml_file], stdout=subprocess.DEVNULL)
+
+    print(f"[{serial}] Tìm ô tìm kiếm nhạc...")
+    bounds = find_bounds_for_search_box(xml_file)
     if not bounds:
-        print("Không tìm thấy ô search nhạc.")
+        print(f"[{serial}] ❌ Không tìm thấy ô search nhạc.")
         return
 
     x, y = get_center_of_bounds(bounds)
-    print(f"Tap vào ô search tại ({x}, {y})")
-    subprocess.run(["adb", "-s", serial, "shell", "input", "tap", str(x), str(y)])
+    print(f"[{serial}] Tap vào ô search tại ({x}, {y})")
+    subprocess.run([adb_path, "-s", serial, "shell", "input", "tap", str(x), str(y)])
 
-    import time
     time.sleep(1)
 
     query = song_name.strip().replace(" ", "+")
-    print(f"Đang nhập: {song_name}")
-    subprocess.run(["adb", "-s", serial, "shell", "input", "text", query])
+    print(f"[{serial}] Nhập bài nhạc: {song_name}")
+    subprocess.run([adb_path, "-s", serial, "shell", "input", "text", query])
     time.sleep(1)
 
-    subprocess.run(["adb", "-s", serial, "shell", "input", "keyevent", "66"])
+    subprocess.run([adb_path, "-s", serial, "shell", "input", "keyevent", "66"])
     time.sleep(1)
