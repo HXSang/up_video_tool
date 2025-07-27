@@ -27,26 +27,29 @@ def find_bounds_for_done_button(xml_file_path):
         tree = ET.parse(xml_file_path)
         root = tree.getroot()
         for node in root.iter():
+            rid = node.attrib.get("resource-id", "")
+            enabled = node.attrib.get("enabled", "")
             if (
-                node.attrib.get("resource-id") == "com.google.android.youtube:id/shorts_trim_finish_trim_button"
-                and node.attrib.get("enabled") == "true"
+                rid == "com.google.android.youtube:id/shorts_trim_finish_trim_button"
+                and enabled == "true"
             ):
                 return node.attrib.get("bounds")
     except Exception as e:
         print(f"❌ Lỗi đọc XML: {e}")
     return None
 
-def tap_done_button(serial="emulator-5554", adb_path="adb"):
-    print(f"[{serial}] ⏯ Tap giữa màn hình để dừng preview...")
-    
-    # Thử dừng preview nhiều lần nếu chưa có Done
-    for attempt in range(3):
-        tap(500, 500, serial, adb_path)
-        time.sleep(1)
+def tap_done_button(serial="emulator-5554", adb_path="adb", timeout=180):
+    print(f"[{serial}] ⏯ Đang chờ nút Done sẵn sàng...")
 
-        print(f"[{serial}] 📥 Dumping UI (lần {attempt+1})...")
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        # Tap nhẹ để kích hoạt UI nếu đang preview
+        tap(500, 500, serial, adb_path)
+
+        # Dump UI
         xml_file = dump_ui(serial, adb_path)
 
+        # Tìm nút Done đã bật
         bounds = find_bounds_for_done_button(xml_file)
         if bounds:
             x, y = get_center_of_bounds(bounds)
@@ -55,7 +58,8 @@ def tap_done_button(serial="emulator-5554", adb_path="adb"):
                 subprocess.run([adb_path, "-s", serial, "shell", "input", "tap", str(x), str(y)])
                 return True
 
-        time.sleep(2)
+        print(f"[{serial}] ⏳ Chưa thấy nút Done, thử lại...")
+        time.sleep(1)
 
-    print(f"[{serial}] ⚠️ Không tìm thấy nút Done sau khi dừng preview.")
+    print(f"[{serial}] ❌ Hết thời gian chờ nút Done.")
     return False

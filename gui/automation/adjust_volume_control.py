@@ -4,7 +4,7 @@ import re
 import os
 import threading
 
-class ActionSync:
+class VolumeSync:
     def __init__(self, num_participants):
         self.barrier = threading.Barrier(num_participants)
 
@@ -97,18 +97,18 @@ def tap_done_button(serial, adb_path="adb"):
 
     print(f"[{serial}] ⚠️ Không tìm thấy nút Done trong UI.")
 
-def adjust_volume_with_sync(serial, sync: ActionSync, voice_percent=100, music_percent=50, adb_path="adb"):
+def adjust_volume_with_sync(serial, voice_percent=100, music_percent=50, adb_path="adb"):
     voice = max(0, min(100, voice_percent))
     music = max(0, min(100, music_percent))
 
     print(f"[{serial}] 🔊 Bắt đầu chỉnh âm lượng: Voice={voice}%, Music={music}%")
-    dump_ui(serial, adb_path)
-    sync.wait(f"[{serial}] ⏸️ Chờ tất cả máy ảo dump xong...")
 
+    dump_ui(serial, adb_path)
+
+    # Không cần chờ sync.wait()
     set_volume_from_slider_index(0, voice, serial, adb_path)
     set_volume_from_slider_index(1, music, serial, adb_path)
 
-    sync.wait(f"[{serial}] ⏸️ Chờ trước khi nhấn Done...")
     tap_done_button(serial, adb_path)
     
 def get_emulator_serials(adb_path):
